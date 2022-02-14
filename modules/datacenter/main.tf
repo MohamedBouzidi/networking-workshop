@@ -292,20 +292,10 @@ resource "aws_instance" "bastion" {
   source_dest_check      = false
   key_name               = "DefaultKeyPair"
   vpc_security_group_ids = [aws_security_group.public.id]
-  depends_on             = [aws_nat_gateway.ngw, aws_instance.dns]
+  depends_on             = [aws_instance.dns]
 
   user_data = <<-EOF
     #!/bin/bash
-
-    cat <<'RESOLV' > /etc/resolv.conf
-    ${chomp(local.resolv_conf)}
-    RESOLV
-
-    while ! [ "$(dig +noall +answer ${keys(local.nameservers)[0]}.${var.domain} | wc -l)" -gt 0 ]
-    do
-      echo "Waiting for nameserver..."
-      sleep 3
-    done
 
     mkdir -p /home/ec2-user/.ssh
 
@@ -361,6 +351,10 @@ resource "aws_instance" "bastion" {
 
     systemctl enable ipsec.service
     systemctl start ipsec.service
+
+    cat <<'RESOLV' > /etc/resolv.conf
+    ${chomp(local.resolv_conf)}
+    RESOLV
     EOF
 
   tags = {
@@ -378,12 +372,6 @@ resource "aws_instance" "dns" {
 
   user_data = <<-EOF
     #!/bin/bash
-
-    while ! [ "$(ping -c 1 amazon.com)" ]
-    do
-      echo "Waiting for internet connectivity..."
-      sleep 3
-    done
 
     mkdir -p /home/ec2-user/.ssh
 
@@ -430,21 +418,11 @@ resource "aws_instance" "web" {
   instance_type          = "t3.micro"
   subnet_id              = aws_subnet.private.id
   private_ip             = local.hosts["web"]
-  depends_on             = [aws_nat_gateway.ngw, aws_instance.dns]
+  depends_on             = [aws_instance.dns]
   vpc_security_group_ids = [aws_security_group.private.id]
 
   user_data = <<-EOF
     #!/bin/bash
-
-    cat <<'RESOLV' > /etc/resolv.conf
-    ${chomp(local.resolv_conf)}
-    RESOLV
-
-    while ! [ "$(dig +noall +answer ${keys(local.nameservers)[0]}.${var.domain} | wc -l)" -gt 0 ]
-    do
-      echo "Waiting for nameserver..."
-      sleep 3
-    done
 
     mkdir -p /home/ec2-user/.ssh
 
@@ -460,6 +438,10 @@ resource "aws_instance" "web" {
     # Start NGINX
     systemctl enable nginx
     systemctl start nginx
+
+    cat <<'RESOLV' > /etc/resolv.conf
+    ${chomp(local.resolv_conf)}
+    RESOLV
     EOF
 
   tags = {
