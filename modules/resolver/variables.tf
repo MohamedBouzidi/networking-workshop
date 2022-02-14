@@ -1,23 +1,23 @@
 variable "domain" {
-    type = string
+  type = string
 }
 
 variable "nameserver" {
-    type = string
+  type = string
 }
 
 variable "target_vpc" {
-    type = object({
-        id = string
-        cidr = string
-        subnets = list(string)
-    })
+  type = object({
+    id      = string
+    cidr    = string
+    subnets = list(string)
+  })
 }
 
 variable "allowed_vpcs" {
-    type = list(object({
-        id = string
-        cidr = string
-        name = string
-    }))
+  type = list(object({
+    id   = string
+    cidr = string
+    name = string
+  }))
 }

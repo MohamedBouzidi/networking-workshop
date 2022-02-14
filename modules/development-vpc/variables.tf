@@ -12,10 +12,10 @@ variable "az2" {
 
 variable "allow_inbound" {
   type = list(object({
-    protocol = string
+    protocol  = string
     from_port = number
-    to_port = number
-    source = string
+    to_port   = number
+    source    = string
   }))
   default = []
 }

@@ -75,14 +75,14 @@ resource "aws_route53_resolver_rule" "private" {
 }
 
 resource "aws_route53_resolver_rule_association" "main" {
-  name = "Shared Services"
+  name             = "Shared Services"
   resolver_rule_id = aws_route53_resolver_rule.private.id
-  vpc_id = var.target_vpc.id
+  vpc_id           = var.target_vpc.id
 }
 
 resource "aws_route53_resolver_rule_association" "allowed" {
-  count = length(var.allowed_vpcs)
-  name = var.allowed_vpcs[count.index].name
+  count            = length(var.allowed_vpcs)
+  name             = var.allowed_vpcs[count.index].name
   resolver_rule_id = aws_route53_resolver_rule.private.id
-  vpc_id = var.allowed_vpcs[count.index].id
+  vpc_id           = var.allowed_vpcs[count.index].id
 }

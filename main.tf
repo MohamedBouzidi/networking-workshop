@@ -68,10 +68,10 @@ module "production_vpc" {
 
   allow_inbound = [
     {
-      protocol = "icmp"
+      protocol  = "icmp"
       from_port = -1
-      to_port = -1
-      source = local.datacenter_cidr
+      to_port   = -1
+      source    = local.datacenter_cidr
     }
   ]
 }
@@ -85,10 +85,10 @@ module "development_vpc" {
 
   allow_inbound = [
     {
-      protocol = "icmp"
+      protocol  = "icmp"
       from_port = -1
-      to_port = -1
-      source = local.datacenter_cidr
+      to_port   = -1
+      source    = local.datacenter_cidr
     }
   ]
 }
@@ -127,6 +127,10 @@ module "routing" {
     {
       destination = local.vpc_summ
       route_table = module.shared_services_vpc.public_route_table
+    },
+    {
+      destination = local.datacenter_cidr
+      route_table = module.shared_services_vpc.private_route_table
     }
   ]
 }
@@ -150,24 +154,24 @@ module "datacenter" {
 
   domain   = local.private_domain
   vpc_cidr = local.vpc_summ
-  tgw = module.routing.tgw
-  az1 = local.az1
-  az2 = local.az2
+  tgw      = module.routing.tgw
+  az1      = local.az1
+  az2      = local.az2
 }
 
 module "resolver" {
   source = "./modules/resolver"
 
-  domain = local.private_domain
+  domain     = local.private_domain
   nameserver = module.datacenter.nameserver_ip
   target_vpc = {
-    id = module.shared_services_vpc.id
-    cidr = local.vpc0cidr
+    id      = module.shared_services_vpc.id
+    cidr    = local.vpc0cidr
     subnets = module.shared_services_vpc.subnets
   }
   allowed_vpcs = [
     {
-      id = module.production_vpc.id
+      id   = module.production_vpc.id
       cidr = local.vpc1cidr
       name = "Production"
     }

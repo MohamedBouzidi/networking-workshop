@@ -12,25 +12,25 @@ resource "aws_default_security_group" "main" {
   vpc_id = aws_vpc.main.id
 
   ingress {
-    protocol = -1
-    self = true
+    protocol  = -1
+    self      = true
     from_port = 0
-    to_port = 0
+    to_port   = 0
   }
 
   egress {
-    protocol = -1
-    from_port = 0
-    to_port = 0
+    protocol    = -1
+    from_port   = 0
+    to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   dynamic "ingress" {
     for_each = var.allow_inbound
     content {
-      protocol = ingress.value["protocol"]
-      from_port = ingress.value["from_port"]
-      to_port = ingress.value["to_port"]
+      protocol    = ingress.value["protocol"]
+      from_port   = ingress.value["from_port"]
+      to_port     = ingress.value["to_port"]
       cidr_blocks = [ingress.value["source"]]
     }
   }

@@ -250,10 +250,10 @@ resource "aws_route" "private_outbound" {
 }
 
 resource "aws_route" "private_vpc" {
-  count = var.tgw != null ? 1 : 0
-  route_table_id = aws_route_table.private.id
+  count                  = var.tgw != null ? 1 : 0
+  route_table_id         = aws_route_table.private.id
   destination_cidr_block = var.vpc_cidr
-  network_interface_id = aws_instance.bastion.primary_network_interface_id
+  network_interface_id   = aws_instance.bastion.primary_network_interface_id
 }
 
 resource "aws_route_table_association" "private" {
@@ -426,11 +426,11 @@ resource "aws_instance" "dns" {
 }
 
 resource "aws_instance" "web" {
-  ami           = data.aws_ami.amzn2.id
-  instance_type = "t3.micro"
-  subnet_id     = aws_subnet.private.id
-  private_ip    = local.hosts["web"]
-  depends_on    = [aws_nat_gateway.ngw, aws_instance.dns]
+  ami                    = data.aws_ami.amzn2.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.private.id
+  private_ip             = local.hosts["web"]
+  depends_on             = [aws_nat_gateway.ngw, aws_instance.dns]
   vpc_security_group_ids = [aws_security_group.private.id]
 
   user_data = <<-EOF
