@@ -96,30 +96,30 @@ module "development_vpc" {
 module "routing" {
   source = "./modules/routing"
 
-  attachments = [
+  shared = [
     {
-      name            = "Shared Services"
-      destination     = local.vpc_summ
-      id              = module.shared_services_vpc.id
-      subnets         = module.shared_services_vpc.subnets
-      route_table     = module.shared_services_vpc.private_route_table
-      shared_services = true
+      name        = "Shared Services"
+      destination = local.vpc_summ
+      id          = module.shared_services_vpc.id
+      subnets     = module.shared_services_vpc.subnets
+      route_table = module.shared_services_vpc.private_route_table
+    }
+  ]
+
+  members = [
+    {
+      name        = "Production"
+      cidr        = local.vpc1cidr
+      id          = module.production_vpc.id
+      subnets     = module.production_vpc.subnets
+      route_table = module.production_vpc.route_table
     },
     {
-      name            = "Production"
-      destination     = "0.0.0.0/0"
-      id              = module.production_vpc.id
-      subnets         = module.production_vpc.subnets
-      route_table     = module.production_vpc.route_table
-      shared_services = false
-    },
-    {
-      name            = "Development"
-      destination     = "0.0.0.0/0"
-      id              = module.development_vpc.id
-      subnets         = module.development_vpc.subnets
-      route_table     = module.development_vpc.route_table
-      shared_services = false
+      name        = "Development"
+      cidr        = local.vpc2cidr
+      id          = module.development_vpc.id
+      subnets     = module.development_vpc.subnets
+      route_table = module.development_vpc.route_table
     }
   ]
 
@@ -152,11 +152,14 @@ module "development_instances" {
 module "datacenter" {
   source = "./modules/datacenter"
 
-  domain   = local.private_domain
-  vpc_cidr = local.vpc_summ
-  tgw      = module.routing.tgw
-  az1      = local.az1
-  az2      = local.az2
+  domain                 = local.private_domain
+  vpc_cidr               = local.vpc_summ
+  connect_transit        = true
+  transit_gateway        = module.routing.transit_gateway
+  target_route_table     = module.routing.target_route_table
+  associated_route_table = module.routing.associated_route_table
+  az1                    = local.az1
+  az2                    = local.az2
 }
 
 module "resolver" {

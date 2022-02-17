@@ -6,12 +6,20 @@ variable "vpc_cidr" {
   type = string
 }
 
-variable "tgw" {
-  type = object({
-    id          = string
-    route_table = string
-  })
-  default = null
+variable "connect_transit" {
+  type = bool
+}
+
+variable "transit_gateway" {
+  type    = string
+}
+
+variable "target_route_table" {
+  type    = string
+}
+
+variable "associated_route_table" {
+  type    = string
 }
 
 variable "az1" {

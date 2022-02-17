@@ -1,11 +1,20 @@
-variable "attachments" {
+variable "shared" {
   type = list(object({
-    name            = string
-    destination     = string
-    id              = string
-    subnets         = list(string)
-    route_table     = string
-    shared_services = bool
+    name        = string
+    destination = string
+    id          = string
+    subnets     = list(string)
+    route_table = string
+  }))
+}
+
+variable "members" {
+  type = list(object({
+    name        = string
+    cidr        = string
+    id          = string
+    subnets     = list(string)
+    route_table = string
   }))
 }
 

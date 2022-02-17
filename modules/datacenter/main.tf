@@ -250,7 +250,7 @@ resource "aws_route" "private_outbound" {
 }
 
 resource "aws_route" "private_vpc" {
-  count                  = var.tgw != null ? 1 : 0
+  count                  = var.connect_transit ? 1 : 0
   route_table_id         = aws_route_table.private.id
   destination_cidr_block = var.vpc_cidr
   network_interface_id   = aws_instance.bastion.primary_network_interface_id
@@ -330,7 +330,7 @@ resource "aws_instance" "bastion" {
         auto=start
         left=%defaultroute
         leftid=${aws_eip.cgw.public_ip}
-        right=${var.tgw != null ? aws_vpn_connection.datacenter[0].tunnel1_address : ""}
+        right=${var.connect_transit ? aws_vpn_connection.datacenter[0].tunnel1_address : ""}
         type=tunnel
         ikelifetime=8h
         keylife=1h
@@ -346,7 +346,7 @@ resource "aws_instance" "bastion" {
     VPN
 
     cat <<'SECRET' > /etc/ipsec.d/aws.secrets
-    ${aws_eip.cgw.public_ip} ${var.tgw != null ? aws_vpn_connection.datacenter[0].tunnel1_address : ""}: PSK "${random_string.tunnel1_preshared_key.result}"
+    ${aws_eip.cgw.public_ip} ${var.connect_transit ? aws_vpn_connection.datacenter[0].tunnel1_address : ""}: PSK "${random_string.tunnel1_preshared_key.result}"
     SECRET
 
     systemctl enable ipsec.service
@@ -450,7 +450,7 @@ resource "aws_instance" "web" {
 }
 
 resource "aws_customer_gateway" "datacenter" {
-  count      = var.tgw != null ? 1 : 0
+  count      = var.connect_transit ? 1 : 0
   bgp_asn    = 65000
   ip_address = aws_eip.cgw.public_ip
   type       = "ipsec.1"
@@ -461,9 +461,9 @@ resource "aws_customer_gateway" "datacenter" {
 }
 
 resource "aws_vpn_connection" "datacenter" {
-  count                 = var.tgw != null ? 1 : 0
+  count                 = var.connect_transit ? 1 : 0
   customer_gateway_id   = aws_customer_gateway.datacenter[0].id
-  transit_gateway_id    = var.tgw.id
+  transit_gateway_id    = var.transit_gateway
   static_routes_only    = true
   tunnel1_preshared_key = random_string.tunnel1_preshared_key.result
   type                  = aws_customer_gateway.datacenter[0].type
@@ -474,7 +474,7 @@ resource "aws_vpn_connection" "datacenter" {
 }
 
 resource "aws_security_group_rule" "tunnel1_500" {
-  count             = var.tgw != null ? 1 : 0
+  count             = var.connect_transit ? 1 : 0
   type              = "ingress"
   security_group_id = aws_security_group.public.id
   protocol          = "udp"
@@ -484,7 +484,7 @@ resource "aws_security_group_rule" "tunnel1_500" {
 }
 
 resource "aws_security_group_rule" "tunnel1_4500" {
-  count             = var.tgw != null ? 1 : 0
+  count             = var.connect_transit ? 1 : 0
   type              = "ingress"
   security_group_id = aws_security_group.public.id
   protocol          = "udp"
@@ -494,8 +494,14 @@ resource "aws_security_group_rule" "tunnel1_4500" {
 }
 
 resource "aws_ec2_transit_gateway_route" "shared_services" {
-  count                          = var.tgw != null ? 1 : 0
+  count                          = var.connect_transit ? 1 : 0
   destination_cidr_block         = local.datacenter_cidr
   transit_gateway_attachment_id  = aws_vpn_connection.datacenter[0].transit_gateway_attachment_id
-  transit_gateway_route_table_id = var.tgw.route_table
+  transit_gateway_route_table_id = var.target_route_table
+}
+
+resource "aws_ec2_transit_gateway_route_table_association" "members" {
+  count                          = var.connect_transit ? 1 : 0
+  transit_gateway_attachment_id  = aws_vpn_connection.datacenter[0].transit_gateway_attachment_id
+  transit_gateway_route_table_id = var.associated_route_table
 }
