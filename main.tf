@@ -41,14 +41,17 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  vpc_summ        = "10.0.0.0/8"
-  vpc0cidr        = "10.1.0.0/16"
-  vpc1cidr        = "10.2.0.0/16"
-  vpc2cidr        = "10.3.0.0/16"
-  private_domain  = "corp.local"
-  datacenter_cidr = "172.16.0.0/16" # This cannot be changed because it's hard-coded in the datacenter module
-  az1             = data.aws_availability_zones.available.names[0]
-  az2             = data.aws_availability_zones.available.names[1]
+  vpc_summ             = "10.0.0.0/8"
+  vpc0cidr             = "10.1.0.0/16"
+  vpc1cidr             = "10.2.0.0/16"
+  vpc2cidr             = "10.3.0.0/16"
+  private_domain       = "corp.local"
+  cloud_domain         = "corp.cloud"
+  reverse_cloud_domain = "10.in-addr.arpa"
+  datacenter_cidr      = "172.16.0.0/16" # This cannot be changed because it's hard-coded in the datacenter module
+  datacenter_dns       = "172.16.16.53"
+  az1                  = data.aws_availability_zones.available.names[0]
+  az2                  = data.aws_availability_zones.available.names[1]
 }
 
 module "shared_services_vpc" {
@@ -154,10 +157,14 @@ module "datacenter" {
 
   domain                 = local.private_domain
   vpc_cidr               = local.vpc_summ
+  nameserver             = local.datacenter_dns
   connect_transit        = true
   transit_gateway        = module.routing.transit_gateway
   target_route_table     = module.routing.target_route_table
   associated_route_table = module.routing.associated_route_table
+  cloud_domain           = local.cloud_domain
+  reverse_cloud_domain   = local.reverse_cloud_domain
+  resolver_endpoint_ips  = module.resolver.inbound_endpoint_ips
   az1                    = local.az1
   az2                    = local.az2
 }
@@ -166,7 +173,7 @@ module "resolver" {
   source = "./modules/resolver"
 
   domain     = local.private_domain
-  nameserver = module.datacenter.nameserver_ip
+  nameserver = local.datacenter_dns
   target_vpc = {
     id      = module.shared_services_vpc.id
     cidr    = local.vpc0cidr
@@ -179,4 +186,12 @@ module "resolver" {
       name = "Production"
     }
   ]
+
+  cloud_domain = local.cloud_domain
+  cloud_records = concat(
+    [for ip in module.production_instances.private_ips : {
+    ip : ip, name : "instance-${index(module.production_instances.private_ips, ip)}.prod" }],
+    [for ip in module.development_instances.private_ips : {
+    ip : ip, name : "instance-${index(module.development_instances.private_ips, ip)}.dev" }]
+  )
 }

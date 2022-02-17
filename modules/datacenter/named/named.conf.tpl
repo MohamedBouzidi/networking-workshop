@@ -66,3 +66,4 @@ zone "." IN {
 include "/etc/named.rfc1912.zones";
 include "/etc/named.root.key";
 include "/etc/named/named.conf.local";
+include "/etc/named/named.conf.cloud";

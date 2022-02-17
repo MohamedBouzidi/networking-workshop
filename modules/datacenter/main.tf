@@ -2,7 +2,7 @@ locals {
   datacenter_cidr = "172.16.0.0/16"
   reverse_domain  = "172.16"
   nameservers = {
-    "ns1" = "172.16.16.53"
+    "ns1" = var.nameserver
   }
   hosts = {
     "bastion" = "172.16.0.100"
@@ -50,6 +50,15 @@ locals {
     {
       forward_domain = var.domain
       nameservers    = local.nameservers
+    }
+  )
+
+  named_conf_cloud = templatefile(
+    "${path.module}/named/named.conf.cloud.tpl",
+    {
+      forward_domain = var.cloud_domain
+      reverse_domain = var.reverse_cloud_domain
+      nameservers    = var.resolver_endpoint_ips
     }
   )
 }
@@ -391,6 +400,10 @@ resource "aws_instance" "dns" {
 
     cat <<'DATA' > /etc/named/named.conf.local
     ${chomp(local.named_conf_local)}
+    DATA
+
+    cat <<'DATA' > /etc/named/named.conf.cloud
+    ${chomp(local.named_conf_cloud)}
     DATA
 
     chmod 755 /etc/named
